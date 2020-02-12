@@ -37,8 +37,6 @@ func Send(smtpObj *models.EmailActionSpec) error {
 		"\r\n" +
 		smtpObj.Body
 
-	logger.Infof(smtpAddr)
-
 	err := smtp.SendMail(smtpAddr, nil, from, to, []byte(msg))
 
 	if err != nil {
