@@ -52,8 +52,9 @@ const (
 )
 
 type EmailActionSpec struct {
-	Sender   string `json:"from"`
-	To       string `json:"emails"`
-	username string `json:"username"`
-	password string `json:"password"`
+	From     string `json:"from"`
+	To       string `json:"to"`
+	Password string `json:"password"`
+	Subject  string `json:"subject"`
+	Body     string `json:"body"`
 }

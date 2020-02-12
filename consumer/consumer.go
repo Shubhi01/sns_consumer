@@ -8,6 +8,7 @@ import (
 
 	"httpclient"
 	"models"
+	"smtp"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -70,6 +71,14 @@ func consumeFromTopic(topic string, wg *sync.WaitGroup) {
 				logger.Error(err)
 				continue
 			}
+		case "EMAIL":
+			var actionSpec models.EmailActionSpec
+			err := json.Unmarshal([]byte(action.ActionSpec), &actionSpec)
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+			smtp.Send(&actionSpec)
 
 		default:
 			logger.Infof("unexpected topic: %s", topic)
