@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"sync"
 
 	"httpclient"
@@ -20,6 +22,21 @@ var logger = logrus.NewEntry(logrus.New())
 
 var client = httpclient.NewHTTPClient("", "", &http.Transport{}, logger)
 
+var kafkaAddr string
+
+func init() {
+	curDir, err := os.Getwd()
+	if err != nil {
+		logger.Fatal(err)
+	}
+	fileByte, err := ioutil.ReadFile(curDir + "/kafka.txt")
+	if err != nil {
+		logger.Fatal(err)
+	}
+	kafkaAddr = string(fileByte)
+
+}
+
 func main() {
 
 	wg.Add(3)
@@ -34,7 +51,7 @@ func consumeFromTopic(topic string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: []string{"10.46.143.17:9092"},
+		Brokers: []string{kafkaAddr},
 		GroupID: "consumer-group-id",
 		//	Partition: 0,
 		Topic:    topic,
@@ -46,6 +63,7 @@ func consumeFromTopic(topic string, wg *sync.WaitGroup) {
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
+			logger.Error(err)
 			break
 		}
 
@@ -78,7 +96,11 @@ func consumeFromTopic(topic string, wg *sync.WaitGroup) {
 				logger.Error(err)
 				continue
 			}
-			smtp.Send(&actionSpec)
+			err = smtp.Send(&actionSpec)
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
 
 		default:
 			logger.Infof("unexpected topic: %s", topic)

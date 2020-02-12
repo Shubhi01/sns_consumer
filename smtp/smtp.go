@@ -1,8 +1,11 @@
 package smtp
 
 import (
-	"fmt"
+	// "fmt"
+	"io/ioutil"
 	"net/smtp"
+	"os"
+	"strings"
 
 	"models"
 
@@ -11,23 +14,37 @@ import (
 
 var logger = logrus.NewEntry(logrus.New())
 
-func Send(smtpObj *models.EmailActionSpec) {
-	from := fmt.Sprintf("<%s>", smtpObj.From)
-	pass := smtpObj.Password
-	to := smtpObj.To
+var smtpAddr string
 
-	logger.Info(from)
-	logger.Info(pass)
+func init() {
+	curDir, err := os.Getwd()
+	if err != nil {
+		logger.Fatal(err)
+	}
+	fileByte, err := ioutil.ReadFile(curDir + "/../smtp/ip.txt")
+	if err != nil {
+		logger.Fatal(err)
+	}
 
-	msg := fmt.Sprintf("From: %s\nTo: %s\nSubject: %s\n\n%s", from, to, smtpObj.Subject, smtpObj.Body)
+	smtpAddr = string(fileByte)
+}
 
-	err := smtp.SendMail("smtp.gmail.com:587",
-		smtp.PlainAuth("", smtpObj.From, pass, "smtp.gmail.com"),
-		from, []string{to}, []byte(msg))
+func Send(smtpObj *models.EmailActionSpec) error {
+	from := smtpObj.From
+	to := strings.Split(smtpObj.To, ",")
+
+	msg := "Subject: " + smtpObj.Subject + "\r\n" +
+		"\r\n" +
+		smtpObj.Body
+
+	logger.Infof(smtpAddr)
+
+	err := smtp.SendMail(smtpAddr, nil, from, to, []byte(msg))
 
 	if err != nil {
 		logger.Errorf("smtp error: %s", err)
-		return
+		return err
 	}
+	return nil
 
 }

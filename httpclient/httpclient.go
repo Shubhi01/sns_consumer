@@ -45,7 +45,7 @@ func (cl *Client) Do(ctx context.Context, method string,
 
 	log := cl.log
 
-	req, err := http.NewRequest("GET", "http://localhost:6666/sns/api/v1/account/1", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
 	if err != nil {
 		log.Error(err)
 		return nil, 0, err
