@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -20,7 +21,7 @@ var wg = sync.WaitGroup{}
 
 var logger = logrus.NewEntry(logrus.New())
 
-var client = httpclient.NewHTTPClient("", "", &http.Transport{}, logger)
+var client = httpclient.NewHTTPClient("admin", "Nutanix.123", &http.Transport{}, logger)
 
 var kafkaAddr string
 
@@ -39,10 +40,12 @@ func init() {
 
 func main() {
 
-	wg.Add(3)
+	wg.Add(5)
 	go consumeFromTopic("HTTP", &wg)
 	go consumeFromTopic("SMS", &wg)
 	go consumeFromTopic("EMAIL", &wg)
+	go consumeFromTopic("CALM_SCALE_OUT", &wg)
+	go consumeFromTopic("CALM_SCALE_DOWN", &wg)
 	wg.Wait()
 }
 
@@ -97,6 +100,24 @@ func consumeFromTopic(topic string, wg *sync.WaitGroup) {
 				continue
 			}
 			err = smtp.Send(&actionSpec)
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+
+		case "CALM_SCALE_OUT":
+			reqBody := `{"api_version":"3.0","metadata":{"project_reference":{"kind":"project","name":"default","uuid":"e53105fc-a498-4158-ac10-fa23d79ec66e"},"name":"SNS_TEST_APP","creation_time":"1581528249903526","spec_version":9,"kind":"app","last_update_time":"1581530108769015","uuid":"3dff19c9-9d4c-18b4-c65d-22dcd8f696ea"},"spec":{"target_uuid":"cb115218-2412-44f0-8f18-7432b8dfcb43","target_kind":"Application","args":[]}}`
+			url := fmt.Sprintf("http://localhost:3000/api/nutanix/v3/apps/%s/actions/%s/run", "cb115218-2412-44f0-8f18-7432b8dfcb43", "ff61053e-15e2-4425-8526-b8c1c61e951e")
+			_, _, err = client.Do(context.Background(), "POST", url, []byte(reqBody))
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+
+		case "CALM_SCALE_DOWN":
+			reqBody := `{"api_version":"3.0","metadata":{"project_reference":{"kind":"project","name":"default","uuid":"e53105fc-a498-4158-ac10-fa23d79ec66e"},"name":"SNS_TEST_APP","creation_time":"1581528249903526","spec_version":12,"kind":"app","last_update_time":"1581530985987996","uuid":"ef2bcc54-ed02-3d14-5fde-9e8254022399"},"spec":{"target_uuid":"cb115218-2412-44f0-8f18-7432b8dfcb43","target_kind":"Application","args":[]}}`
+			url := fmt.Sprintf("http://localhost:3000/api/nutanix/v3/apps/%s/actions/%s/run", "cb115218-2412-44f0-8f18-7432b8dfcb43", "38ab5424-5e3d-4e81-88e9-aa71c7ce6c49")
+			_, _, err = client.Do(context.Background(), "POST", url, []byte(reqBody))
 			if err != nil {
 				logger.Error(err)
 				continue

@@ -51,10 +51,15 @@ func (cl *Client) Do(ctx context.Context, method string,
 		return nil, 0, err
 	}
 
-	if cl.username != "" && cl.password != "" {
-		log.Infof("Using BasicAuth for authentication with the Server: %s", url)
-		req.SetBasicAuth(cl.username, cl.password)
-	}
+	// if cl.username != "" && cl.password != "" {
+	// 	log.Infof("Using BasicAuth for authentication with the Server: %s", url)
+	// 	req.SetBasicAuth(cl.username, cl.password)
+	// }
+
+	req.SetBasicAuth(cl.username, cl.password)
+
+	req.Header = http.Header{}
+	req.Header["Content-Type"] = []string{"application/json"}
 
 	log.Infof(">>" + method + " " + url + " " + string(requestBody))
 

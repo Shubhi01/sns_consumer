@@ -58,3 +58,8 @@ type EmailActionSpec struct {
 	Subject  string `json:"subject"`
 	Body     string `json:"body"`
 }
+
+type CalmActionSpec struct {
+	AppUUID    string `json:"app_uuid"`
+	ActionUUID string `json:"action_uuid"`
+}
